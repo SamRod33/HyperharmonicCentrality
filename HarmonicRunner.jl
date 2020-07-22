@@ -48,23 +48,23 @@ function hyp2Cliq(dataFile1::String, dataFile2::String)
     #         keep = false) if !isempty(line)]
 
 
-#     # Conversion to clique
-#     clique = Vector{Array{Int64, 1}}
-#
-#
-#
-#     n = size(hyper, 1)
-#     for k = 1:n
-#         m = size(hyper, 2)
-#         temp=zeros(m)
-#         for l=1:m
-#             temp[l]
-#     end
-#
-#
-#     # Once we have clique, this makes the adjency matrix of clique
-#     A = max.(clique, clique')
-#
+    # Conversion to clique
+    clique = Array[]
+
+    n = size(hyper, 1)
+    for hyperedge = 1:n
+        m = size(hyper[hyperedge,:], 2)
+        for currentNode=1:m
+            for otherNodes=currentNode+1:m
+                i = hyper[hyperedge][1,currentNode]
+                j= hyper[hyperedge][1,otherNode]
+                push!(clique, [i j])
+            end
+        end
+    end
+
+    return clique
+    # Once we have clique, this makes the adjency matrix of clique
  end
 
 
