@@ -51,16 +51,19 @@ function hyp2Cliq(dataFile1::String, dataFile2::String)
     # Conversion to clique
     clique = Array[]
 
-    n = size(hyper, 1)
+    n = size(hyper, 1) # amount of hyperedges
+    count = 0
     for hyperedge = 1:n
-        m = size(hyper[hyperedge,:], 2)
-        for currentNode=1:m
-            for otherNodes=currentNode+1:m
-                i = hyper[hyperedge][1,currentNode]
-                j= hyper[hyperedge][1,otherNode]
-                push!(clique, [i j])
+        m = size(hyper[hyperedge], 1) # nodes in the current hyperedge
+        for posNodeI=1:m
+            for posNodeJ=posNodeI+1:m
+                i = hyper[hyperedge][posNodeI] # current node
+                j= hyper[hyperedge][posNodeJ] # running through all
+                                                 # other nodes in hyperedge
+                push!(clique, [i j]) # create pair (i,j)
             end
         end
+        count = count + 1
     end
 
     return clique
