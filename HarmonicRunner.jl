@@ -9,7 +9,7 @@ function hyp2Cliq(dataFile1::String, dataFile2::String)
                 a hypergraph
 
     Parameter: File containing hypergraph
-    Precondition:
+    Precondition: Files exist and ar in the same folder
     =#
     #FileReading Hypergraph (if we have two Files)
 
@@ -18,34 +18,27 @@ function hyp2Cliq(dataFile1::String, dataFile2::String)
     #go into second file and take that many nodes from last (keep track of
     #position last taken from)
 
-    #final matrix like this:
-    # hyper = [ [nodes in hyperedge1]; [nodes in hyperedge2]; ... ; [nodes in hyperedge n] ]
+    #final array like this:
+    # hyper = [ [nodes in hyperedge1]; [nodes in hyperedge2]; ... ;[nodes in hyperedge n] ]
 
     edges = readdlm(dataFile1)
     nodes = readdlm(datafile2)
     numedges = size(edges,1) #number of hyperedges / rows in hypergraph matrix
     numnodes = size(nodes,1) #total number of hypernodes
 
-    #make an empty hypergraph list
-    #push into hypergraph list
-    #push(list, what we're pusing in)
 
-    #first crate a matrix and zero it out?
-    hyper = zeros([T=Float64,] Int64::rows,1)
+    #first crate a hypergraph array and zero it out
+    hyper = zeros(Int64, numedges ,1)
 
-    #go through each line to find how many nodes are supposed to be in
+    #go through each line
+
     i = 1 #line pos we're at in second file
     for line in 1:numedges
         take = edges[line] #number of nodes to take from other file
-        Edge = nodes[i:i+take]
-        i += take
-        hyper[line] = Edge
+        Edge = nodes[i:i+take] #makes an array representing hyperedge with its nodes
+        i += take #update line postion in second file
+        hyper[line] = Edge #place hyperedge array in overall hypergraph
 
-
-    #first crate a matrix and zero it out?
-
-
-    hyper # Hypergraph Variable
 
     # Hypergraph (Converting if hyperedge is line by line)
     # line2vec(line) = parse.(Int, split(line, '\t' ))
