@@ -11,6 +11,8 @@ function hyp2Cliq(dataFile::String, dataFile::String)
     Parameter: File containing hypergraph
     Precondition:
     =#
+    
+    hello
 
     #FileReading Hypergraph (if we have two Files)
 
