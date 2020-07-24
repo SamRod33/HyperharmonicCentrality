@@ -40,9 +40,11 @@ function convertToHype(dataFile1::String, dataFile2::String)
     i = 1 #line pos we're at in second file
     for line in 1:numedges
         take = edges[line] #number of nodes to take from other file
-        Edge = nodes[i:(i-1)+Int64(take)] #makes an array representing hyperedge with its nodes
+        if take > 1
+            Edge = nodes[i:(i-1)+Int64(take)] #makes an array representing hyperedge with its nodes
+            push!(hyper, Edge) #place hyperedge array in overall hypergraph
+        end
         i += Int64(take) #update line postion in second file
-        push!(hyper, Edge) #place hyperedge array in overall hypergraph
     end
     hyper=hyper[2:end]
 
@@ -51,7 +53,7 @@ function convertToHype(dataFile1::String, dataFile2::String)
     # hyper=[line2vec(line) for line in eachline(dataFile;
     #         keep = false) if !isempty(line)]
 
-    return hyper
+    return unique(hyper)
     # Once we have clique, this makes the adjency matrix of clique
  end
 
@@ -60,52 +62,55 @@ function hype2Clique(hyper::Vector{Array{Int64, 1}})
     # Conversion to clique
     clique = Array[]
 
-    n = size(hyper, 1) # amount of hyperedges
-    count = 0
-    for hyperedge = 1:n
-        m = size(hyper[hyperedge], 1) # nodes in the current hyperedge
-        for posNodeI=1:m
-            for posNodeJ=posNodeI+1:m
+    m = size(hyper, 1) # amount of hyperedges
+    for hyperedge = 1:m
+        n = size(hyper[hyperedge], 1) # nodes in the current hyperedge
+        for posNodeI=1:n
+            for posNodeJ=posNodeI+1:n
                 i = hyper[hyperedge][posNodeI] # current node
                 j= hyper[hyperedge][posNodeJ] # running through all
                                                  # other nodes in hyperedge
                 push!(clique, [i,j]) # create pair (i,j)
             end
         end
-        count = count + 1
     end
 
-    return clique
+    return unique(clique)
 end
 
 
 function cliqueToAdjMatrix(cliq::Vector{Array})
     # Converts Clique to Adjacency Matrix representation
     # Makes all values of weights to be one
+    println(typeof(cliq))
     clique = cliq[:,:]
+    println(typeof(clique))
     clique = hcat(clique...)
+    n = maximum(clique)[1]
     A = sparse(clique[1,:],
-               clique[2,:] ,1, size(cliq,1), size(cliq,1))
-    for i=1:size(cliq,1)
-        for j=1:size(cliq,1)
+              clique[2,:] ,1, n, n)
+    for i=1:size(A,1)
+        for j=1:size(A,1)
             if A[i,j] != 0
                 A[i,j] = 1
             end
         end
     end
-    return max.(A,A')
+    return A
 end
 
-hypergraph = convertToHype("email-Enron/email-Enron-nverts.txt", "email-Enron/email-Enron-simplices.txt")
-clique = hype2Clique(hypergraph)
-A1 = cliqueToAdjMatrix(clique)
-### Calculate Centrality Measure by converting clique adjacency matrix
-### into graph
-A = Matrix(A1)
-G = nx.Graph(A)
-harmCent=nx.harmonic_centrality(G)
-closeCent = nx.closeness_centrality(G)
+h=getA()
 
+function getA()
+    hypergraph = convertToHype("email-Enron/email-Enron-nverts.txt", "email-Enron/email-Enron-simplices.txt")
+    clique = hype2Clique(hypergraph)
+    A1 = cliqueToAdjMatrix(clique)
+    ### Calculate Centrality Measure by converting clique adjacency matrix
+    ### into graph
+    A = Matrix(A1)
+    G = nx.Graph(A)
+    return hypergraph
+end
 #----------------------------------------------------------------#
 ######## ERROR: AssertionError: length(node_weights) == n ########
 #----------------------------------------------------------------#
@@ -115,15 +120,23 @@ function graphNetwork(network::SparseMatrixCSC{Int64, Int64})
             their harmonic centrality score
     =#
     Random.seed!(123)  # plot same each time
-    d = sum(network, dims=1)
-    d = d[1,:]
+    G = nx.Graph(A)
+    harmCent=nx.harmonic_centrality(G)
+    cent=[harmCent[i] for i in 0:147]
     graphplot(network,
               markersize = 0.2,
               markercolor = "red",
               fontsize = 10,
               linecolor = :darkgrey,
-              node_weights = d
+              node_weights = cent.+1
               )
-    savefig("clique.png")
+    savefig("one.png")
 end
-graphNetwork(A)
+graphNetwork(getA())
+
+
+for i in 1:length(h)
+    if length(findall(h[i],1))>1
+        println(i)
+    end
+end
