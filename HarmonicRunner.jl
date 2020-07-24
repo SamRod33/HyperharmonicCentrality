@@ -3,6 +3,10 @@ using Random
 using  PyCall
 using LinearAlgebra
 using SparseArrays
+using Pkg; Pkg.add("PyPlot")
+import Pkg; Pkg.add("GraphRecipes")
+using GraphRecipes
+using Plots
 nx=pyimport("networkx")
 
 function convertToHype(dataFile1::String, dataFile2::String)
@@ -29,7 +33,6 @@ function convertToHype(dataFile1::String, dataFile2::String)
     numedges = size(edges,1) #number of hyperedges / rows in hypergraph matrix
     numnodes = size(nodes,1) #total number of hypernodes
 
-
     #initialize hypergraph as an array of arrays
     hyper = hyper=[[1,2]]
 
@@ -43,14 +46,12 @@ function convertToHype(dataFile1::String, dataFile2::String)
     end
     hyper=hyper[2:end]
 
-
     # Hypergraph (Converting if hyperedge is line by line)
     # line2vec(line) = parse.(Int, split(line, '\t' ))
     # hyper=[line2vec(line) for line in eachline(dataFile;
     #         keep = false) if !isempty(line)]
 
     return hyper
-
     # Once we have clique, this makes the adjency matrix of clique
  end
 
@@ -97,7 +98,32 @@ end
 
 hypergraph = convertToHype("email-Enron/email-Enron-nverts.txt", "email-Enron/email-Enron-simplices.txt")
 clique = hype2Clique(hypergraph)
-A = cliqueToAdjMatrix(clique)
-### ERROR SAYING NOT A VALID INPUT
+A1 = cliqueToAdjMatrix(clique)
+### Calculate Centrality Measure by converting clique adjacency matrix
+### into graph
+A = Matrix(A1)
 G = nx.Graph(A)
-cent=nx.harmonic_centrality(G)
+harmCent=nx.harmonic_centrality(G)
+closeCent = nx.closeness_centrality(G)
+
+#----------------------------------------------------------------#
+######## ERROR: AssertionError: length(node_weights) == n ########
+#----------------------------------------------------------------#
+function graphNetwork(network::SparseMatrixCSC{Int64, Int64})
+    #=
+    Returns: graph of clique with node size scaled by
+            their harmonic centrality score
+    =#
+    Random.seed!(123)  # plot same each time
+    d = sum(network, dims=1)
+    d = d[1,:]
+    graphplot(network,
+              markersize = 0.2,
+              markercolor = "red",
+              fontsize = 10,
+              linecolor = :darkgrey,
+              node_weights = d
+              )
+    savefig("clique.png")
+end
+graphNetwork(A)
