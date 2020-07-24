@@ -1,9 +1,11 @@
 using DelimitedFiles
 using Random
 using  PyCall
+using LinearAlgebra
+using SparseArrays
 nx=pyimport("networkx")
 
-function hyp2Cliq(dataFile1::String, dataFile2::String)
+function convertToHype(dataFile1::String, dataFile2::String)
     #=
     Returns: clique representing the projected graph of
                 a hypergraph
@@ -47,7 +49,13 @@ function hyp2Cliq(dataFile1::String, dataFile2::String)
     # hyper=[line2vec(line) for line in eachline(dataFile;
     #         keep = false) if !isempty(line)]
 
+    return hyper
 
+    # Once we have clique, this makes the adjency matrix of clique
+ end
+
+
+function hype2Clique(hyper::Vector{Array{Int64, 1}})
     # Conversion to clique
     clique = Array[]
 
@@ -60,15 +68,36 @@ function hyp2Cliq(dataFile1::String, dataFile2::String)
                 i = hyper[hyperedge][posNodeI] # current node
                 j= hyper[hyperedge][posNodeJ] # running through all
                                                  # other nodes in hyperedge
-                push!(clique, [i j]) # create pair (i,j)
+                push!(clique, [i,j]) # create pair (i,j)
             end
         end
         count = count + 1
     end
 
     return clique
-    # Once we have clique, this makes the adjency matrix of clique
- end
+end
 
 
-hyp2Cliq("email-Enron/email-Enron-nverts.txt", "email-Enron/email-Enron-simplices.txt")
+function cliqueToAdjMatrix(cliq::Vector{Array})
+    # Converts Clique to Adjacency Matrix representation
+    # Makes all values of weights to be one
+    clique = cliq[:,:]
+    clique = hcat(clique...)
+    A = sparse(clique[1,:],
+               clique[2,:] ,1, size(cliq,1), size(cliq,1))
+    for i=1:size(cliq,1)
+        for j=1:size(cliq,1)
+            if A[i,j] != 0
+                A[i,j] = 1
+            end
+        end
+    end
+    return max.(A,A')
+end
+
+hypergraph = convertToHype("email-Enron/email-Enron-nverts.txt", "email-Enron/email-Enron-simplices.txt")
+clique = hype2Clique(hypergraph)
+A = cliqueToAdjMatrix(clique)
+### ERROR SAYING NOT A VALID INPUT
+G = nx.Graph(A)
+cent=nx.harmonic_centrality(G)
