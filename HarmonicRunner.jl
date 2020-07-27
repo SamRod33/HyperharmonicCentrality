@@ -9,6 +9,18 @@ using GraphRecipes
 using Plots
 nx=pyimport("networkx")
 
+
+function get_val(dict::Dict{Int64,Int64}, key::Int64)
+    if !haskey(dict, key)
+        n = length(dict) + 1
+        dict[key] = n
+        return n
+    end
+    return dict[key]
+end
+
+
+
 function convertToHype(dataFile1::String, dataFile2::String)
     #=
     Returns: clique representing the projected graph of
@@ -53,6 +65,13 @@ function convertToHype(dataFile1::String, dataFile2::String)
     # hyper=[line2vec(line) for line in eachline(dataFile;
     #         keep = false) if !isempty(line)]
 
+    node_map = Dict{Int64, Int64}();
+    for i in 1:length(hyper)
+        for j in 1:length(hyper[i])
+            hyper[i][j]=get_val(node_map,hyper[i][j])
+        end
+    end
+
     return unique(hyper)
     # Once we have clique, this makes the adjency matrix of clique
  end
@@ -82,13 +101,12 @@ end
 function cliqueToAdjMatrix(cliq::Vector{Array})
     # Converts Clique to Adjacency Matrix representation
     # Makes all values of weights to be one
-    println(typeof(cliq))
     clique = cliq[:,:]
-    println(typeof(clique))
     clique = hcat(clique...)
     n = maximum(clique)[1]
     A = sparse(clique[1,:],
               clique[2,:] ,1, n, n)
+    A = A+ A'
     for i=1:size(A,1)
         for j=1:size(A,1)
             if A[i,j] != 0
@@ -99,44 +117,62 @@ function cliqueToAdjMatrix(cliq::Vector{Array})
     return A
 end
 
-h=getA()
 
-function getA()
-    hypergraph = convertToHype("email-Enron/email-Enron-nverts.txt", "email-Enron/email-Enron-simplices.txt")
-    clique = hype2Clique(hypergraph)
+function getAdjMatrix()
+    clique = getClique()
     A1 = cliqueToAdjMatrix(clique)
     ### Calculate Centrality Measure by converting clique adjacency matrix
     ### into graph
     A = Matrix(A1)
-    G = nx.Graph(A)
+    return A
+end
+
+function getHypergraph()
+    hypergraph = convertToHype("email-Enron/email-Enron-nverts.txt", "email-Enron/email-Enron-simplices.txt")
     return hypergraph
 end
+
+function getClique()
+    hypergraph = getHypergraph()
+    clique = hype2Clique(hypergraph)
+    return clique
+end
+
 #----------------------------------------------------------------#
 ######## ERROR: AssertionError: length(node_weights) == n ########
 #----------------------------------------------------------------#
-function graphNetwork(network::SparseMatrixCSC{Int64, Int64})
+function graphNetwork(network::Array{Int64, 2})
     #=
     Returns: graph of clique with node size scaled by
             their harmonic centrality score
     =#
     Random.seed!(123)  # plot same each time
-    G = nx.Graph(A)
+    G = nx.Graph(network)
     harmCent=nx.harmonic_centrality(G)
-    cent=[harmCent[i] for i in 0:147]
+    n = length(keys(harmCent))-1
+    cent=[harmCent[i] for i in 0:n]
     graphplot(network,
               markersize = 0.2,
               markercolor = "red",
               fontsize = 10,
               linecolor = :darkgrey,
-              node_weights = cent.+1
+              node_weights = cent.+1,
+              names = [i for i=1:n]
               )
     savefig("one.png")
 end
-graphNetwork(getA())
+graphNetwork(getAdjMatrix())
 
+h=Nothing
+A=Nothing
+A=getAdjMatrix()
+h=getHypergraph()
+G = nx.Graph(A)
+harmCent=nx.harmonic_centrality(G)
+length(keys(harmCent))
 
 for i in 1:length(h)
-    if length(findall(h[i],1))>1
+    if length(findall(h[i].==1))>1
         println(i)
     end
 end
