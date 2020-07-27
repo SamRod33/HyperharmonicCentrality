@@ -4,9 +4,13 @@ using  PyCall
 using LinearAlgebra
 using SparseArrays
 using Pkg; Pkg.add("PyPlot")
-import Pkg; Pkg.add("GraphRecipes")
-using GraphRecipes
+import Pkg; Pkg.add("GraphPlot")
+using GraphPlot
 using Plots
+using LightGraphs
+using Colors
+using Cairo
+using Compose
 nx=pyimport("networkx")
 
 
@@ -146,29 +150,41 @@ function graphNetwork(network::Array{Int64, 2})
     Returns: graph of clique with node size scaled by
             their harmonic centrality score
     =#
-    Random.seed!(123)  # plot same each time
+    Random.seed!(12345678)  # plot same each time
     G = nx.Graph(network)
     harmCent=nx.harmonic_centrality(G)
     n = length(keys(harmCent))-1
     cent=[harmCent[i] for i in 0:n]
-    graphplot(network,
-              markersize = 0.2,
-              markercolor = "red",
-              fontsize = 10,
-              linecolor = :darkgrey,
-              node_weights = cent.+1,
-              names = [i for i=1:n]
-              )
-    savefig("one.png")
+    cent = cent / maximum(cent)
+    # graphplot(network,
+    #           markersize = 0.2,
+    #           markercolor = "red",
+    #           fontsize = 10,
+    #           linecolor = :darkgrey,
+    #           node_weights = cent.+1,
+    #           names = [i for i=1:n]
+    #           )
+    g = SimpleGraph(network)
+    nodefill = [RGBA(0.0,0.9,0.8,i) for i in cent]
+    layout=(args...)->spring_layout(args...; C=35)
+    p= gplot(g, layout=layout, nodefillc=nodefill,
+            edgestrokec=colorant"grey", nodelabel = 1:143,
+            NODELABELSIZE=3, NODESIZE=0.040)
+    #return gplot(g, nodefillc=nodefillc)
+    draw(PNG("CliqueHarmonic.png", 16cm, 16cm), p)
+# save to svg
 end
 graphNetwork(getAdjMatrix())
-
 h=Nothing
 A=Nothing
 A=getAdjMatrix()
 h=getHypergraph()
 G = nx.Graph(A)
+
 harmCent=nx.harmonic_centrality(G)
+
+
+
 length(keys(harmCent))
 
 for i in 1:length(h)
