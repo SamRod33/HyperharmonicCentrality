@@ -156,39 +156,19 @@ function graphNetwork(network::Array{Int64, 2})
     n = length(keys(harmCent))-1
     cent=[harmCent[i] for i in 0:n]
     cent = cent / maximum(cent)
-    # graphplot(network,
-    #           markersize = 0.2,
-    #           markercolor = "red",
-    #           fontsize = 10,
-    #           linecolor = :darkgrey,
-    #           node_weights = cent.+1,
-    #           names = [i for i=1:n]
-    #           )
     g = SimpleGraph(network)
-    nodefill = [RGBA(0.0,0.9,0.8,i) for i in cent]
+    nodefill = [RGBA(0.0,i,0.0,i) for i in cent]
     layout=(args...)->spring_layout(args...; C=35)
     p= gplot(g, layout=layout, nodefillc=nodefill,
             edgestrokec=colorant"grey", nodelabel = 1:143,
             NODELABELSIZE=3, NODESIZE=0.040)
-    #return gplot(g, nodefillc=nodefillc)
     draw(PNG("CliqueHarmonic.png", 16cm, 16cm), p)
-# save to svg
 end
 graphNetwork(getAdjMatrix())
-h=Nothing
-A=Nothing
-A=getAdjMatrix()
-h=getHypergraph()
-G = nx.Graph(A)
-
-harmCent=nx.harmonic_centrality(G)
-
-
 
 length(keys(harmCent))
 
-for i in 1:length(h)
-    if length(findall(h[i].==1))>1
-        println(i)
-    end
-end
+# nodes, edges, hyperedges
+# nodes      - 143
+# edges      -
+# hyperedges -
