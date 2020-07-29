@@ -132,27 +132,39 @@ function getAdjMatrix()
 end
 
 function getHypergraph()
+    #= Returns Hypergraph from files Enron =#
     hypergraph = convertToHype("email-Enron/email-Enron-nverts.txt", "email-Enron/email-Enron-simplices.txt")
     return hypergraph
 end
 
 function getClique()
+    #= Returns clique from hypergraph of Enron=#
     hypergraph = getHypergraph()
     clique = hype2Clique(hypergraph)
     return clique
 end
 
-#----------------------------------------------------------------#
-######## ERROR: AssertionError: length(node_weights) == n ########
-#----------------------------------------------------------------#
-function graphNetwork(network::Array{Int64, 2})
+function getHarmonicCentrality(network::Array{Int64, 2})
+    #= Returns harmonic centrality score for each node as a dictionary =#
+    G = nx.Graph(network)
+    harmCent=nx.harmonic_centrality(G)
+    return harmCent
+end
+
+function getClosenessCentrality(network::Array{Int64,2})
+    #= Returns closeness centrality score for each node as a dictionary =#
+    G = nx.Graph(network)
+    closeCent=nx.closeness_centrality(G)
+    return closeCent
+end
+
+function graphHarmonicNetwork(network::Array{Int64, 2})
     #=
-    Returns: graph of clique with node size scaled by
+    Returns: graph of clique with node color scaled by
             their harmonic centrality score
     =#
     Random.seed!(12345678)  # plot same each time
-    G = nx.Graph(network)
-    harmCent=nx.harmonic_centrality(G)
+    harmCent = getHarmonicCentrality(network)
     n = length(keys(harmCent))-1
     cent=[harmCent[i] for i in 0:n]
     cent = cent / maximum(cent)
@@ -164,11 +176,42 @@ function graphNetwork(network::Array{Int64, 2})
             NODELABELSIZE=3, NODESIZE=0.040)
     draw(PNG("CliqueHarmonic.png", 16cm, 16cm), p)
 end
-graphNetwork(getAdjMatrix())
+graphHarmonicNetwork(getAdjMatrix())
 
-length(keys(harmCent))
+function graphClosenessNetwork(network::Array{Int64, 2})
+    #=
+    Returns: graph of clique with node color scaled by
+            their closeness centrality score
+    =#
+    Random.seed!(12345678)  # plot same each time
+    closeCent = getClosenessCentrality(network)
+    n = length(keys(closeCent))-1
+    cent=[closeCent[i] for i in 0:n]
+    cent = cent / maximum(cent)
+    g = SimpleGraph(network)
+    nodefill = [RGBA(0.0,i,0.0,i) for i in cent]
+    layout=(args...)->spring_layout(args...; C=35)
+    p= gplot(g, layout=layout, nodefillc=nodefill,
+            edgestrokec=colorant"grey", nodelabel = 1:143,
+            NODELABELSIZE=3, NODESIZE=0.040)
+    draw(PNG("CliqueClosnessNorm.png", 16cm, 16cm), p)
+end
+graphClosenessNetwork(getAdjMatrix())
 
+# STATISTICS ANALYSIS SUGGESTIONS
+# sum of (A.-B) do line 193 instead
+# L_2 Norm
+# norm function
+
+# Rank top ten closness and harmonic (normalized)
+# Generalize for each rank afterwards (spearmans correlation coefficient)
+
+# WHAT IF WE DIDNT MAKE ALL WEIGHTS ONE
+
+norm(hcent-ccent,2)
+
+# DATA:
 # nodes, edges, hyperedges
 # nodes      - 143
-# edges      -
-# hyperedges -
+# edges      - 2168
+# hyperedges - 1487
