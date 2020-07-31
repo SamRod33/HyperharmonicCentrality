@@ -11,7 +11,7 @@ using LightGraphs
 using Colors
 using Cairo
 using Compose
-using PyPlot
+##### using PyPlot ******CAUSES ERROR WITH SAVE FUNCTION WHEN GRAPHING *******
 nx=pyimport("networkx")
 
 
