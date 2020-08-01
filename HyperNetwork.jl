@@ -1,15 +1,29 @@
+#=
+Main Module for the research project
+
+This module provides a variety of methods to manipulate a hypergraph or graph
+network given source files. We use the Enron Email Dataset to apply our
+research. The calculation of Harmonic Centrality and Closeness Centrality are
+currently supported, as that is our focus for the project.
+
+This module transforms the dataset into an adjacency matrix that represents
+the weighted and unweighted clique formed from its hypergraph.
+
+Unweighted and Weighted representations of the dataset are supported.
+
+The GraphVisuals.jl and StatisticalAnalysis.jl modules derive their calculations
+from this main module
+
+Author: Samuel Rodriguez   (sar325@cornell.edu)
+        Monique Rampersaud (mar452@cornell.edu)
+Date:   08.01.20
+=#
 using DelimitedFiles
 using Random
 using  PyCall
 using LinearAlgebra
-using SparseArrays
-import Pkg; Pkg.add("GraphPlot")
-using GraphPlot
 using LightGraphs
-using Colors
-using Cairo
-using Compose: draw, cm, PNG
-using PyPlot: savefig, clf, semilogx, gca, legend, xlabel, ylabel, title
+using SparseArrays
 using StatsBase
 nx=pyimport("networkx")
 
@@ -277,153 +291,3 @@ function getClosenessCentrality(network::Array{Int64,2})
     closeCent=nx.closeness_centrality(G)
     return closeCent
 end
-
-
-function rank_corrbetweenness(name::Any,dataset::Any, index_start::Int64)
-    # Compares ranking of nodes between two sets of data
-    cec_c=dataset[:,1]
-    n=length(cec_c)
-    cec_c[cec_c]=[i for i in 1:n]
-    hec_c=dataset[:,2]
-    hec_c[hec_c]=[i for i in 1:n]
-    start = log10(index_start - 1)
-    finish = log10(length(cec_c) - 1)
-    ran = [convert(Int64, round(v)) for v in 10 .^ range(start, stop=finish, length=500)]
-    sp = sortperm(cec_c)
-    cec_c, hec_c= cec_c[sp], hec_c[sp]
-    cec_hec = [corspearman(cec_c[(end-s):end], hec_c[(end-s):end]) for s in ran]
-    sp = sortperm(hec_c)
-    cec_c, hec_c = cec_c[sp], hec_c[sp]
-    hec_cec = [corspearman(hec_c[(end-s):end], cec_c[(end-s):end]) for s in ran]
-    clf()
-    xs = collect(ran) .+ 1
-    semilogx(xs, cec_hec, linestyle="-",  lw=1,    label="Weighted Harmonic Centrality")
-    semilogx(xs, hec_cec, linestyle=":",  lw=2.25, label="Un-Weighted Harmonic Centrality")
-    fsz = 20
-    ax = gca()
-    ax.tick_params(axis="both", labelsize=fsz-2, length=7, width=1.5)
-    ax.tick_params(axis="x",    which="minor", length=4, width=1)
-    legend(fontsize=fsz-10, frameon=false)
-    title("$name", fontsize=fsz)
-    xlabel("Number of top-ranked elements", fontsize=fsz)
-    ylabel("Spearman’s rank corr. coeff.", fontsize=fsz)
-    savefig("6241-spearman-$name-rankcorr.png", bbox_inches="tight")
-end
-
-
-#######################################################################
-#------------------DATA for Enron Data Set:---------------------------#
-#######################################################################
-# nodes, edges, hyperedges
-# nodes      - 143
-# edges      - 1800
-# hyperedges - 10551
-
-
-
-
-#######################################################################
-#---------------------------------------------------------------------#
-#---------------------STATISTICS ANALYSIS-----------------------------#
-#---------------------------------------------------------------------#
-#######################################################################
-
-#######################################################################
-#-----Calculating L_2 Norm for harmonic and closeness centrality------#
-#-----(How close are the two datasets)--------------------------------#
-#######################################################################
-hCent = getHarmonicCentrality(getAdjMatrix())
-ordered_hCent=sort(hCent)
-hCentScores = [t[2] for t in ordered_hCent]
-hCentScoresNorm = hCentScores / maximum(hCentScores)
-
-cCent = getClosenessCentrality(getAdjMatrix())
-ordered_cCent=sort(cCent)
-cCentScores = [t[2] for t in ordered_cCent]
-cCentScoresNorm = cCentScores/ maximum(cCentScores)
-
-norm(hCentScoresNorm-cCentScoresNorm,2)
-### L_2 Norm --> 0.1869 result on a normalized scale (i.e from 0-2 scale) ###
-
-
-##############################################################################
-######-------------- WHAT IF WE DIDNT MAKE ALL WEIGHTS ONE ------------#######
-##############################################################################
-getAdjMatrix_Weighted()
-hCentW=getHarmonicCentrality(getAdjMatrix_Weighted(), true)
-ordered_hCentW=sort(hCentW)
-hCentWScores = [t[2] for t in ordered_hCentW]
-hCentWScoresNorm = hCentWScores / maximum(hCentWScores)
-
-hCentNotW=getHarmonicCentrality(getAdjMatrix(), false)
-ordered_hCentNotW=sort(hCentNotW)
-hCentNotWScores = [t[2] for t in ordered_hCentNotW]
-hCentNotWScoresNorm = hCentNotWScores / maximum(hCentNotWScores)
-
-norm(hCentNotWScoresNorm-hCentWScoresNorm,2)
-# L_2 Norm turned out to be 0.99899 (0 - 2 range, greater distance from
-#                                    0 indicates two data sets are more different)
-
-
-########################################################################
-#---- Spearman Correlation Coefficient (compares ranking of nodes) ----#
-#---- between unweighted and weighted harmonic centralities -----------#
-
-# Creates lists by ordering nodes from highest centrality score to lowest
-hCentWRank = [n[1] for n in sort(hCentW, byvalue=true, rev=true)]
-hCentNotWRank = [n[1] for n in sort(hCentNotW, byvalue=true, rev=true)]
-
-# Combines both lists where each list is put in its own column
-ranks = [ [(n+1) for n in hCentWRank] [(k+1) for k in hCentNotWRank] ]
-
-# Calculates Spearman Correlation Coefficient and Plots it
-rank_corrbetweenness("HarmonicRankings", ranks, 10)
-
-
-
-
-#############################################################################
-#-------------------- GRAPHING NETWORKS ------------------------------------#
-#############################################################################
-function graphHarmonicNetwork(network::Array{Int64, 2})
-    #=
-    Returns: graph of clique with node color scaled by
-            their harmonic centrality score
-    =#
-    Random.seed!(12345678)  # plot same each time
-    harmCent = getHarmonicCentrality(network, true)
-    n = length(keys(harmCent))-1
-    cent=[harmCent[i] for i in 0:n]
-    cent = cent / maximum(cent)
-    g = SimpleGraph(network)
-    nodefill = [RGBA(i,0.0,0.0,i) for i in cent]
-    layout=(args...)->spring_layout(args...; C=35)
-    p= gplot(g, layout=layout, nodefillc=nodefill,
-            edgestrokec=colorant"grey", nodelabel = 1:143,
-            NODELABELSIZE=3, NODESIZE=0.040)
-    draw(PNG("CliqueHarmonic_WeightedRED.png", 16cm, 16cm), p)
-end
-
-
-function graphClosenessNetwork(network::Array{Int64, 2})
-    #=
-    Returns: graph of clique with node color scaled by
-            their closeness centrality score
-    =#
-    Random.seed!(12345678)  # plot same each time
-    closeCent = getClosenessCentrality(network)
-    n = length(keys(closeCent))-1
-    cent=[closeCent[i] for i in 0:n]
-    cent = cent / maximum(cent)
-    g = SimpleGraph(network)
-    nodefill = [RGBA(i,0.0,0.0,i) for i in cent]
-    layout=(args...)->spring_layout(args...; C=35)
-    p= gplot(g, layout=layout, nodefillc=nodefill,
-            edgestrokec=colorant"grey", nodelabel = 1:143,
-            NODELABELSIZE=3, NODESIZE=0.040)
-    draw(PNG("CliqueClosnessRED.png", 16cm, 16cm), p)
-end
-
-graphHarmonicNetwork(getAdjMatrix())
-graphClosenessNetwork(getAdjMatrix())
-graphHarmonicNetwork(getAdjMatrix_Weighted())
