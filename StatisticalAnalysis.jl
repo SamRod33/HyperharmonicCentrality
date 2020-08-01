@@ -65,8 +65,8 @@ hCentNotWScores = [t[2] for t in ordered_hCentNotW]
 hCentNotWScoresNorm = hCentNotWScores / maximum(hCentNotWScores)
 
 norm(hCentNotWScoresNorm-hCentWScoresNorm,2)
-# L_2 Norm turned out to be 0.99899 (0 - 2 range, greater distance from
-#                                    0 indicates two data sets are more different)
+# L_2 Norm --> 0.99899 (0 - 2 range, greater distance from 0
+#                       indicates two data sets are more different)
 
 
 
