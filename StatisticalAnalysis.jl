@@ -93,8 +93,8 @@ function rank_corrbetweenness(name::Any,dataset::Any, index_start::Int64)
     hec_cec = [corspearman(hec_c[(end-s):end], cec_c[(end-s):end]) for s in ran]
     clf()
     xs = collect(ran) .+ 1
-    semilogx(xs, cec_hec, linestyle="-",  lw=1,    label="Weighted Harmonic Centrality")
-    semilogx(xs, hec_cec, linestyle=":",  lw=2.25, label="Un-Weighted Harmonic Centrality")
+    semilogx(xs, cec_hec, linestyle="-",  lw=1,    label="with respect to weighted")
+    semilogx(xs, hec_cec, linestyle=":",  lw=2.25, label="with respect to unweighted")
     fsz = 20
     ax = gca()
     ax.tick_params(axis="both", labelsize=fsz-2, length=7, width=1.5)
