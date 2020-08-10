@@ -57,15 +57,15 @@ norm(hCentScoresNorm-cCentScoresNorm,2)
 hCentW=getHarmonicCentrality(getAdjMatrix_Weighted(), true)
 ordered_hCentW=sort(hCentW)
 hCentWScores = [t[2] for t in ordered_hCentW]
-hCentWScoresNorm = hCentWScores / maximum(hCentWScores)
+hCentWScoresNorm = hCentWScores / norm(hCentWScores, 2)
 
 hCentNotW=getHarmonicCentrality(getAdjMatrix(), false)
 ordered_hCentNotW=sort(hCentNotW)
 hCentNotWScores = [t[2] for t in ordered_hCentNotW]
-hCentNotWScoresNorm = hCentNotWScores / maximum(hCentNotWScores)
+hCentNotWScoresNorm = hCentNotWScores / norm(hCentNotWScores, 2)
 
 norm(hCentNotWScoresNorm-hCentWScoresNorm,2)
-# L_2 Norm --> 0.99899 (0 - 2 range, greater distance from 0
+# L_2 Norm --> 0.1106 (0 - 1 range, greater distance from 0
 #                       indicates two data sets are more different)
 
 
